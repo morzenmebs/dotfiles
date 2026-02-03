@@ -205,17 +205,23 @@
     (select-window bottom)
     (shell "*shell*")
 
-    ;; Start Firefox; manage hook will place it into RIGHT.
-    (start-process "firefox" nil "firefox")))
+    ;; Start Firefox in the right pane; manage hook will keep it there.
+    (select-window right)
+    (start-process "firefox" nil "firefox")
+    (select-window left)))
 
 (my/exwm-define-view 'home #'my/exwm-view-home)
 
 (defun my/exwm-place-firefox ()
   (when (and my/exwm--right-window
+             (window-live-p my/exwm--right-window)
              (derived-mode-p 'exwm-mode)
              (boundp 'exwm-class-name)
              (string= exwm-class-name "Firefox"))
-    (set-window-buffer my/exwm--right-window (current-buffer))))
+    (let ((source-window (selected-window)))
+      (unless (eq source-window my/exwm--right-window)
+        (set-window-buffer my/exwm--right-window (current-buffer))
+        (switch-to-prev-buffer source-window 'bury)))))
 
 ;; Window switch keys
 (exwm-input-set-key (kbd "s-v") #'my/exwm-apply-view)         ; pick view
