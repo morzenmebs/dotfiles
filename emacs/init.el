@@ -90,10 +90,11 @@
 ;; (global-set-key (kbd "C-c e r") #'reload-init)
 
 (defun my/guix-home-reconfigure-and-logout ()
-  "Run `guix home reconfigure ~/dotfiles/guix/home.scm` then exit Emacs/EXWM."
+  "Run `guix home reconfigure ~/dotfiles/guix/home.scm`, commit+push dotfiles, then exit Emacs/EXWM."
   (interactive)
   (save-some-buffers t)
-  (let* ((home-scm (expand-file-name "~/dotfiles/guix/home.scm"))
+  (let* ((dotfiles-dir (expand-file-name "~/dotfiles/"))
+         (home-scm (expand-file-name "guix/home.scm" dotfiles-dir))
          (cmd (format "guix home reconfigure %s" (shell-quote-argument home-scm)))
          (buf (get-buffer-create "*guix-home-reconfigure*"))
          (proc (start-process-shell-command "guix-home-reconfigure" buf cmd)))
@@ -109,9 +110,30 @@
        (when (memq (process-status p) '(exit signal))
          (let ((code (process-exit-status p)))
            (if (= code 0)
-               (progn
-                 (message "Guix Home reconfigure succeeded; logging out.")
-                 (save-buffers-kill-emacs))
+               (let ((default-directory dotfiles-dir))
+                 ;; Check if there are changes to commit
+                 (if (= 0 (call-process "git" nil nil nil "diff" "--quiet" "HEAD"))
+                     (progn
+                       (message "Guix Home reconfigure succeeded; no dotfile changes to push; logging out.")
+                       (save-buffers-kill-emacs))
+                   ;; Changes exist, commit and push
+                   (with-current-buffer buf
+                     (let ((inhibit-read-only t))
+                       (goto-char (point-max))
+                       (insert "\n\n$ git add -A && git commit && git push\n\n")))
+                   (let ((git-proc (start-process-shell-command
+                                    "dotfiles-push" buf
+                                    "git add -A && git commit -m 'auto: guix home reconfigure' && git push")))
+                     (set-process-sentinel
+                      git-proc
+                      (lambda (gp gevent)
+                        (when (memq (process-status gp) '(exit signal))
+                          (if (= (process-exit-status gp) 0)
+                              (progn
+                                (message "Guix Home reconfigure succeeded; dotfiles pushed; logging out.")
+                                (save-buffers-kill-emacs))
+                            (message "Dotfiles push failed (exit %d). See *guix-home-reconfigure*."
+                                     (process-exit-status gp)))))))))
              (message "Guix Home reconfigure failed (exit %d). See *guix-home-reconfigure*." code))))))))
 
 (global-set-key (kbd "C-c e r") #'my/guix-home-reconfigure-and-logout)

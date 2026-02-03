@@ -17,6 +17,8 @@
              (gnu packages ncurses)
              (gnu packages admin)
              (gnu packages bash)
+             (gnu packages python)
+             (gnu packages rust-apps)
              (guix gexp)
              (guix channels)
              (guix profiles))
@@ -54,7 +56,11 @@
       ncurses
       neofetch
       copyq
-      bash-minimal))
+      bash-minimal
+
+      ;; Python
+      python
+      uv))
 
   (services
    (list
@@ -82,9 +88,9 @@
              (home-bash-configuration
               (guix-defaults? #t)
               (bash-profile
-               (list (plain-file "bash-profile-extra" "
-export _JAVA_AWT_WM_NONREPARENTING=1
-")))))
+               (list (local-file "../bash/profile")))
+              (bashrc
+               (list (local-file "../bash/bashrc")))))
 
     ;; Symlink Emacs config from dotfiles
     (simple-service 'emacs-config
