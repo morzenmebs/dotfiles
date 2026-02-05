@@ -227,6 +227,44 @@
 (exwm-input-set-key (kbd "s-v") #'my/exwm-apply-view)         ; pick view
 (exwm-input-set-key (kbd "s-h") (lambda () (interactive) (my/exwm-apply-view 'home))) ; home
 
+;;;; ---- Factorio ----
+
+;;;; Factorio: game workspace + toggle + safety keys (EXWM)
+
+(defvar my/exwm-game-workspace 9
+  "Workspace index for games (0-based).")
+
+(defvar my/exwm-prev-workspace 0
+  "Last workspace before jumping to the game workspace.")
+
+(defun my/exwm-toggle-game-workspace ()
+  "Toggle between the game workspace and wherever you came from."
+  (interactive)
+  (let ((cur exwm-workspace-current-index))
+    (if (= cur my/exwm-game-workspace)
+        (exwm-workspace-switch my/exwm-prev-workspace)
+      (setq my/exwm-prev-workspace cur)
+      (exwm-workspace-switch my/exwm-game-workspace))))
+
+;; Ensure workspace 9 exists (needs at least 10 workspaces total).
+(setq exwm-workspace-number (max exwm-workspace-number 10))
+
+(with-eval-after-load 'exwm
+  ;; Global keys that work even when the X app has keyboard focus.
+  (exwm-input-set-key (kbd "s-r") #'exwm-reset)                    ; escape hatch
+  (exwm-input-set-key (kbd "s-f") #'exwm-layout-toggle-fullscreen) ; fullscreen
+  (exwm-input-set-key (kbd "s-<tab>") #'my/exwm-toggle-game-workspace)
+
+  (defun my/exwm-factorio-on-manage ()
+    "When Factorio appears: move it, fullscreen it, and let it grab keys."
+    (when (and (boundp 'exwm-class-name)
+               (string= (downcase exwm-class-name) "factorio"))
+      (exwm-workspace-move-window my/exwm-game-workspace)
+      (exwm-layout-toggle-fullscreen)
+      (exwm-input-release-keyboard))) ; give keys to the game (char-mode feel)
+
+  (add-hook 'exwm-manage-finish-hook #'my/exwm-factorio-on-manage))
+
 
 ;;;; ---- Startup ----
 
