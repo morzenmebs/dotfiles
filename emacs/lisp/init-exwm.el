@@ -229,26 +229,39 @@
 
 ;;;; ---- Dyalog RIDE ----
 
+(defvar my/dyalog20-ride-proc nil)
+
 (defun my/dyalog20-ride ()
-  "Start Dyalog 20 with Zero-Footprint RIDE on localhost:8080."
+  "Start Dyalog 20 Zero-Footprint RIDE on http://localhost:8080."
   (interactive)
   (let* ((dyalogdir (expand-file-name "~/.local/opt/dyalog-20/opt/mdyalog/20.0/64/unicode"))
-         (cmd (format
-               "rm -f ~/.dyalog/dyalog.200U64.dcfg; DYALOGDIR=%s guix shell --container --emulate-fhs --network "
-               (shell-quote-argument dyalogdir)))
-         (cmd (concat cmd
-                      "bash coreutils sed grep gawk ncurses zlib gcc-toolchain "
-                      "--share=\"$HOME=$HOME\" -- "
-                      "bash -lc 'export RIDE_INIT=HTTP:*:8080; exec \"$DYALOGDIR/mapl\"'")))
-    (start-process-shell-command "dyalog20-ride" "*dyalog20-ride*" cmd)
+         (mapl (expand-file-name "mapl" dyalogdir))
+         (home (getenv "HOME"))
+         (cmd  (format
+                "rm -f %s; export RIDE_INIT=HTTP:*:8080; exec %s"
+                (shell-quote-argument (expand-file-name "~/.dyalog/dyalog.200U64.dcfg"))
+                (shell-quote-argument mapl))))
+    (when (process-live-p my/dyalog20-ride-proc)
+      (user-error "Dyalog RIDE already running"))
+    (setq my/dyalog20-ride-proc
+          (make-process
+           :name "dyalog20-ride"
+           :buffer "*dyalog20-ride*"
+           :noquery t
+           :command (list "guix" "shell" "--container" "--emulate-fhs" "--network"
+                          "bash" "coreutils" "sed" "grep" "gawk" "ncurses" "zlib" "gcc-toolchain"
+                          "--share" (format "%s=%s" home home)
+                          "--"
+                          "bash" "-c" cmd)))
     (message "Starting Dyalog RIDE at http://localhost:8080")))
 
-(defun my/dyalog20-stop ()
-  "Stop Dyalog 20 mapl processes."
+(defun my/dyalog20-ride-stop ()
+  "Stop the Dyalog 20 RIDE session started by `my/dyalog20-ride`."
   (interactive)
-  (start-process-shell-command
-   "dyalog20-stop" "*dyalog20-stop*"
-   "pkill -TERM -f '/opt/mdyalog/20\\.0/64/unicode/mapl' || true"))
+  (when (process-live-p my/dyalog20-ride-proc)
+    (interrupt-process my/dyalog20-ride-proc)
+    (delete-process my/dyalog20-ride-proc))
+  (setq my/dyalog20-ride-proc nil))
 
 ;;;; ---- Startup ----
 
