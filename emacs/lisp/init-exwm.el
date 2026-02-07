@@ -249,8 +249,8 @@
            :buffer "*dyalog20-ride*"
            :noquery t
            :command (list "guix" "shell" "--container" "--emulate-fhs" "--network"
+                          (format "--share=%s" home)
                           "bash" "coreutils" "sed" "grep" "gawk" "ncurses" "zlib" "gcc-toolchain"
-                          "--share" (format "%s=%s" home home)
                           "--"
                           "bash" "-c" cmd)))
     (message "Starting Dyalog RIDE at http://localhost:8080")))
