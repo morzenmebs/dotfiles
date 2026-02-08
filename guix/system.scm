@@ -3,6 +3,7 @@
 ;; Based on installer-generated config
 
 (use-modules (gnu)
+             (gnu services base)
              (nongnu packages linux)
              (nongnu system linux-initrd))
 (use-service-modules cups desktop networking ssh xorg)
@@ -33,14 +34,20 @@
                   (xorg-configuration (keyboard-layout keyboard-layout)))
                  ;; EXWM session entry for display manager
                  (extra-special-file "/usr/share/xsessions/exwm.desktop"
-                   (plain-file "exwm.desktop"
-                     "[Desktop Entry]
+                                     (plain-file "exwm.desktop"
+                                                 "[Desktop Entry]
 Name=EXWM
 Comment=Emacs X Window Manager
 Exec=emacs --fullscreen
 TryExec=emacs
 Type=Application
-DesktopNames=EXWM")))
+DesktopNames=EXWM"))
+                 ;; Grant all users access to Seeed XIAO serial devices.
+                 ;; Vendor 2886 = Seeed Studio.  Adjust if you have other USB serial
+                 ;; devices you want to restrict.
+                 (udev-rules-service 'seeed-xiao
+                                     (udev-rule "99-seeed-xiao.rules"
+                                                "SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"2886\", MODE=\"0666\"")))
            (modify-services %desktop-services
              (guix-service-type config =>
                (guix-configuration

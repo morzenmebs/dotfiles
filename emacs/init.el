@@ -138,6 +138,30 @@
 
 (global-set-key (kbd "C-c e r") #'my/guix-home-reconfigure-and-logout)
 
+;;;; ---- Seeed Xiao tooling ----
+
+(defun xiao-compile ()
+  "Compile and upload the current Arduino project."
+  (interactive)
+  (let ((default-directory (project-root (project-current t))))
+    (compile "./run make all")))
+
+(defun xiao-compile-only ()
+  "Compile without uploading."
+  (interactive)
+  (let ((default-directory (project-root (project-current t))))
+    (compile "./run make compile")))
+
+(defun xiao-serial ()
+  "Open serial monitor for XIAO."
+  (interactive)
+  (serial-term "/dev/ttyACM0" 115200))
+
+;; Bind to taste, e.g.:
+;; (global-set-key (kbd "C-c a c") #'xiao-compile)
+;; (global-set-key (kbd "C-c a b") #'xiao-compile-only)
+;; (global-set-key (kbd "C-c a s") #'xiao-serial)
+
 ;;;; ---- Dired Sidebar ----
 
 (defun my/dired-sidebar ()
