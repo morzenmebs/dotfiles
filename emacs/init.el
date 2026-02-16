@@ -205,15 +205,32 @@
 
 ;;;; ---- Mneh Org Bibliography macro ----
 
-(require 'json) ;; built-in
+(require 'json)
+
+(setq mneh-program "uv"
+      mneh-program-prefix-args
+      (list "run" "--project" (expand-file-name "~/mneh") "mneh"))
+
+(defcustom mneh-program "mneh"
+  "Executable to invoke mneh (or a wrapper like `uv`)."
+  :type 'string)
+
+(defcustom mneh-program-prefix-args nil
+  "Args always prepended before the mneh subcommand.
+Example for uv:
+  '(\"run\" \"--project\" \"/home/morz/mneh\" \"mneh\")"
+  :type '(repeat string))
+
+(defun mneh--process-lines (&rest args)
+  (apply #'process-lines mneh-program (append mneh-program-prefix-args args)))
 
 (defun mneh-capture-insert-org (link)
-  "Prompt for LINK, run `mneh capture`, then insert:
+  "Prompt for LINK, run capture, then insert:
 *** [[LINK][TITLE]] <<HASH8>>"
   (interactive
    (list (read-string "mneh link: " (or (thing-at-point 'url t) ""))))
-  (process-lines "mneh" "capture" link)
-  (let* ((json-str (mapconcat #'identity (process-lines "mneh" "show" "--last" "--json") "\n"))
+  (mneh--process-lines "capture" link)
+  (let* ((json-str (mapconcat #'identity (mneh--process-lines "show" "--last" "--json") "\n"))
          (obj (json-parse-string json-str :object-type 'alist :null-object nil :false-object nil))
          (title (or (alist-get 'title obj) "Untitled"))
          (url   (or (alist-get 'source_uri obj) link))
@@ -221,6 +238,8 @@
          (hash8 (substring hash 0 (min 8 (length hash)))))
     (insert (format "*** [[%s][%s]] <<%s>>\n" url title hash8))))
 
+
+(global-set-key (kbd "C-c m c") #'mneh-capture-insert-org)
 
 ;;;; ---- use-package (for config organization) ----
 
