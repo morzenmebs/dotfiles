@@ -203,6 +203,25 @@
 (global-set-key (kbd "C-c a") #'org-agenda)
 (global-set-key (kbd "C-c c") #'org-capture)
 
+;;;; ---- Mneh Org Bibliography macro ----
+
+(require 'json) ;; built-in
+
+(defun mneh-capture-insert-org (link)
+  "Prompt for LINK, run `mneh capture`, then insert:
+*** [[LINK][TITLE]] <<HASH8>>"
+  (interactive
+   (list (read-string "mneh link: " (or (thing-at-point 'url t) ""))))
+  (process-lines "mneh" "capture" link)
+  (let* ((json-str (mapconcat #'identity (process-lines "mneh" "show" "--last" "--json") "\n"))
+         (obj (json-parse-string json-str :object-type 'alist :null-object nil :false-object nil))
+         (title (or (alist-get 'title obj) "Untitled"))
+         (url   (or (alist-get 'source_uri obj) link))
+         (hash  (or (alist-get 'hash obj) ""))
+         (hash8 (substring hash 0 (min 8 (length hash)))))
+    (insert (format "*** [[%s][%s]] <<%s>>\n" url title hash8))))
+
+
 ;;;; ---- use-package (for config organization) ----
 
 (require 'use-package)

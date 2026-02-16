@@ -43,6 +43,7 @@
       emacs-desktop-environment  ; brightness/volume keys in EXWM
       emacs-use-package
       emacs-which-key
+      emacs-ement
       
       ;; Fallback fonts (put your Terza .otf in ~/.local/share/fonts/)
       font-dejavu
